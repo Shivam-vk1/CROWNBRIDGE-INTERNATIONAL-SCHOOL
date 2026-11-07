@@ -53,13 +53,24 @@ The compiled, optimized files will be output to the `dist/` directory.
 ## 🌐 How to Deploy as a Live Website
 
 ### Option 1: GitHub Pages (Free & Automated)
-This repository already includes an automated GitHub Actions deployment workflow at `.github/workflows/deploy.yml`.
+This repository includes an automated GitHub Actions deployment workflow at `.github/workflows/deploy.yml` that automatically builds Vite and publishes the production `dist/` bundle.
 
-1. Push this project to your GitHub repository (see steps below).
-2. On GitHub, go to your repository **Settings** → **Pages** (in the left sidebar).
-3. Under **Build and deployment** → **Source**, select **GitHub Actions**.
-4. That's it! GitHub will automatically build and publish your site at:  
-   `https://<your-username>.github.io/<your-repo-name>/`
+1. **Commit and push** all repository files including `package-lock.json` and `.github/workflows/deploy.yml`:
+   ```bash
+   git add .
+   git commit -m "Configure GitHub Actions deployment with Vite build"
+   git push origin main
+   ```
+2. On your GitHub repository:
+   - Go to **Settings** → **Pages** (in the left sidebar).
+   - Under **Build and deployment** → **Source**, select **GitHub Actions** (do NOT choose "Deploy from a branch").
+3. Go to the **Actions** tab at the top of your GitHub repository:
+   - You will see the **Deploy to GitHub Pages** workflow running.
+   - Once it completes with a green checkmark (usually ~45-60 seconds), your live website is ready!
+4. Visit your live site at:  
+   `https://shivam-vk1.github.io/CROWNBRIDGE-INTERNATIONAL-SCHOOL/`
+
+> **Note on Blank Screen**: If you ever see a blank white screen, it is because GitHub deployed raw uncompiled `.tsx` source code instead of the compiled `dist/` bundle. Setting Source to **GitHub Actions** and pushing this updated workflow fixes it immediately.
 
 ### Option 2: Vercel / Netlify (1-Click Deployment)
 1. Go to [vercel.com](https://vercel.com) or [netlify.com](https://netlify.com) and log in with your GitHub account.
