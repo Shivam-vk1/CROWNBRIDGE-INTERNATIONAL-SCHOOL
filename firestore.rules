@@ -1,0 +1,293 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Primitive Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && request.auth.token.email == 'shivamvk1090@gmail.com';
+    }
+
+    function isCollegeAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'digambar_singh@crownbridge.edu.in' ||
+        request.auth.token.email == 'staff@crownbridge.edu.in' ||
+        request.auth.token.email == 'digambar_singh@gmail.com'
+      );
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || isCollegeAdmin() || (
+        isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // 3. Entity Validation Blueprints
+    function isValidNotice(data) {
+      return data.keys().hasAll(['title', 'category', 'content', 'dateLabel', 'isImportant', 'authorUid', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['title', 'category', 'content', 'dateLabel', 'isImportant', 'authorUid', 'createdAt', 'updatedAt']) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+        data.category is string && data.category in ['Admissions', 'Academic', 'Examinations', 'Events', 'General'] &&
+        data.content is string && data.content.size() >= 1 && data.content.size() <= 2000 &&
+        data.dateLabel is string && data.dateLabel.size() >= 1 && data.dateLabel.size() <= 40 &&
+        data.isImportant is bool &&
+        data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidDownload(data) {
+      return data.keys().hasAll(['title', 'category', 'fileSize', 'fileUrl', 'isActive', 'sortOrder', 'authorUid', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['title', 'category', 'fileSize', 'fileUrl', 'isActive', 'sortOrder', 'authorUid', 'createdAt', 'updatedAt']) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+        data.category is string && data.category in ['Forms', 'Syllabus', 'Calendar', 'Hostel', 'General'] &&
+        data.fileSize is string && data.fileSize.size() >= 1 && data.fileSize.size() <= 60 &&
+        data.fileUrl is string && data.fileUrl.size() <= 2000000 &&
+        data.isActive is bool &&
+        data.sortOrder is number && data.sortOrder >= 0 && data.sortOrder <= 1000 &&
+        data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidResult(data) {
+      return data.keys().hasAll([
+          'rollNumber', 'studentName', 'className', 'examTitle', 'session',
+          'englishMarks', 'hindiMarks', 'foreignLanguage', 'foreignLangMarks',
+          'mathScienceMarks', 'aiCurriculumMarks', 'totalMarks', 'percentage',
+          'grade', 'remarks', 'authorUid', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'rollNumber', 'studentName', 'className', 'examTitle', 'session',
+          'englishMarks', 'hindiMarks', 'foreignLanguage', 'foreignLangMarks',
+          'mathScienceMarks', 'aiCurriculumMarks', 'totalMarks', 'percentage',
+          'grade', 'remarks', 'authorUid', 'createdAt', 'updatedAt'
+        ]) &&
+        data.rollNumber is string && data.rollNumber.size() >= 1 && data.rollNumber.size() <= 40 && data.rollNumber.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 100 &&
+        data.className is string && data.className.size() >= 1 && data.className.size() <= 40 &&
+        data.examTitle is string && data.examTitle.size() >= 1 && data.examTitle.size() <= 100 &&
+        data.session is string && data.session.size() >= 1 && data.session.size() <= 20 &&
+        data.englishMarks is number && data.englishMarks >= 0 && data.englishMarks <= 100 &&
+        data.hindiMarks is number && data.hindiMarks >= 0 && data.hindiMarks <= 100 &&
+        data.foreignLanguage is string && data.foreignLanguage in ['German', 'Japanese', 'Korean'] &&
+        data.foreignLangMarks is number && data.foreignLangMarks >= 0 && data.foreignLangMarks <= 100 &&
+        data.mathScienceMarks is number && data.mathScienceMarks >= 0 && data.mathScienceMarks <= 100 &&
+        data.aiCurriculumMarks is number && data.aiCurriculumMarks >= 0 && data.aiCurriculumMarks <= 100 &&
+        data.totalMarks is number && data.totalMarks >= 0 && data.totalMarks <= 500 &&
+        data.percentage is number && data.percentage >= 0 && data.percentage <= 100 &&
+        data.grade is string && data.grade.size() >= 1 && data.grade.size() <= 10 &&
+        data.remarks is string && data.remarks.size() >= 1 && data.remarks.size() <= 300 &&
+        data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128 &&
+        data.authorUid == request.auth.uid &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidFee(data) {
+      return data.keys().hasAll([
+          'classGroup', 'monthlyFee', 'annualFee', 'registrationFee',
+          'sortOrder', 'session', 'authorUid', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'classGroup', 'monthlyFee', 'annualFee', 'registrationFee',
+          'sortOrder', 'session', 'authorUid', 'createdAt', 'updatedAt'
+        ]) &&
+        data.classGroup is string && data.classGroup.size() >= 1 && data.classGroup.size() <= 60 &&
+        data.monthlyFee is number && data.monthlyFee >= 0 && data.monthlyFee <= 1000000 &&
+        data.annualFee is number && data.annualFee >= 0 && data.annualFee <= 12000000 &&
+        data.registrationFee is number && data.registrationFee >= 0 && data.registrationFee <= 1000000 &&
+        data.sortOrder is number && data.sortOrder >= 0 && data.sortOrder <= 100 &&
+        data.session is string && data.session.size() >= 1 && data.session.size() <= 20 &&
+        data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128 &&
+        data.authorUid == request.auth.uid &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSiteContent(data) {
+      return data.keys().hasAll([
+          'schoolName', 'tagline', 'heroBadge', 'academicSession',
+          'admissionsOpenText', 'locationAddress', 'contactPhone',
+          'contactEmail', 'hostelAvailable', 'transportAvailable',
+          'showResultsPortal', 'resultsPortalUrl',
+          'customNavButtonName', 'customNavButtonUrl', 'customNavButtonActive',
+          'customHeroButtonName', 'customHeroButtonUrl', 'customHeroButtonActive',
+          'publicInfoTitle', 'publicInfoImageUrl', 'publicInfoActive', 'publicInfoDescription',
+          'noticesInitialized',
+          'authorUid', 'updatedAt'
+        ]) &&
+        data.schoolName is string && data.schoolName.size() >= 1 && data.schoolName.size() <= 120 &&
+        data.tagline is string && data.tagline.size() >= 1 && data.tagline.size() <= 160 &&
+        data.heroBadge is string && data.heroBadge.size() >= 1 && data.heroBadge.size() <= 120 &&
+        data.academicSession is string && data.academicSession.size() >= 1 && data.academicSession.size() <= 40 &&
+        data.admissionsOpenText is string && data.admissionsOpenText.size() >= 1 && data.admissionsOpenText.size() <= 160 &&
+        data.locationAddress is string && data.locationAddress.size() >= 1 && data.locationAddress.size() <= 250 &&
+        data.contactPhone is string && data.contactPhone.size() >= 1 && data.contactPhone.size() <= 40 &&
+        data.contactEmail is string && data.contactEmail.size() >= 1 && data.contactEmail.size() <= 100 &&
+        data.hostelAvailable is bool &&
+        data.transportAvailable is bool &&
+        data.showResultsPortal is bool &&
+        data.resultsPortalUrl is string && data.resultsPortalUrl.size() <= 300 &&
+        data.customNavButtonName is string && data.customNavButtonName.size() <= 60 &&
+        data.customNavButtonUrl is string && data.customNavButtonUrl.size() <= 300 &&
+        data.customNavButtonActive is bool &&
+        data.customHeroButtonName is string && data.customHeroButtonName.size() <= 60 &&
+        data.customHeroButtonUrl is string && data.customHeroButtonUrl.size() <= 300 &&
+        data.customHeroButtonActive is bool &&
+        data.publicInfoTitle is string && data.publicInfoTitle.size() <= 120 &&
+        data.publicInfoImageUrl is string && data.publicInfoImageUrl.size() <= 300 &&
+        data.publicInfoActive is bool &&
+        data.publicInfoDescription is string && data.publicInfoDescription.size() <= 300 &&
+        data.noticesInitialized is bool &&
+        (!('campusLifeActive' in data) || data.campusLifeActive is bool) &&
+        data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128 &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidInquiry(data) {
+      return data.keys().hasAll([
+          'studentName', 'applyingForClass', 'preferredLanguage',
+          'boardingType', 'parentName', 'phone', 'email',
+          'message', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'studentName', 'applyingForClass', 'preferredLanguage',
+          'boardingType', 'parentName', 'phone', 'email',
+          'message', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 100 &&
+        data.applyingForClass is string && data.applyingForClass.size() >= 1 && data.applyingForClass.size() <= 60 &&
+        data.preferredLanguage is string && data.preferredLanguage in ['Korean', 'Japanese', 'German', 'English', 'Hindi'] &&
+        data.boardingType is string && data.boardingType in ['Day Scholar', 'Residential Hostel'] &&
+        data.parentName is string && data.parentName.size() >= 1 && data.parentName.size() <= 100 &&
+        data.phone is string && data.phone.size() >= 5 && data.phone.size() <= 30 &&
+        data.email is string && data.email.size() <= 100 &&
+        data.message is string && data.message.size() <= 1000 &&
+        data.status is string && data.status in ['new', 'contacted', 'enrolled', 'archived'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAdminProfile(data, adminId) {
+      return data.keys().hasAll(['uid', 'email', 'name', 'role']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+        data.uid == adminId &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 120 &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.role is string && data.role in ['super_admin', 'college_admin'] &&
+        (!('userId' in data) || (data.userId is string && data.userId.size() <= 80)) &&
+        (!('password' in data) || (data.password is string && data.password.size() <= 120)) &&
+        (!('isActive' in data) || data.isActive is bool);
+    }
+
+    // 4. Collection Rules
+    match /notices/{noticeId} {
+      allow get: if isValidId(noticeId);
+      allow list: if true;
+      allow write: if isValidId(noticeId);
+    }
+
+    match /downloads/{downloadId} {
+      allow get: if isValidId(downloadId);
+      allow list: if true;
+      allow write: if isValidId(downloadId);
+    }
+
+    match /gallery/{galleryId} {
+      allow get: if isValidId(galleryId);
+      allow list: if true;
+      allow write: if isValidId(galleryId);
+    }
+
+    match /learning_resources/{resourceId} {
+      allow get: if isValidId(resourceId);
+      allow list: if true;
+      allow write: if isValidId(resourceId);
+    }
+
+    match /results/{resultId} {
+      allow get: if isValidId(resultId);
+      allow list: if resource.data.rollNumber is string;
+      allow create: if isSignedIn() && isValidId(resultId) && isValidResult(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isSignedIn() && isValidId(resultId) && isValidResult(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'rollNumber', 'studentName', 'className', 'examTitle', 'session',
+          'englishMarks', 'hindiMarks', 'foreignLanguage', 'foreignLangMarks',
+          'mathScienceMarks', 'aiCurriculumMarks', 'totalMarks', 'percentage',
+          'grade', 'remarks', 'authorUid', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isSignedIn() && isValidId(resultId) && isAdmin();
+    }
+
+    match /fees/{feeId} {
+      allow get: if isValidId(feeId);
+      allow list: if resource.data.classGroup is string;
+      allow create: if isSignedIn() && isValidId(feeId) && isValidFee(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isSignedIn() && isValidId(feeId) && isValidFee(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'classGroup', 'monthlyFee', 'annualFee', 'registrationFee',
+          'sortOrder', 'session', 'authorUid', 'updatedAt'
+        ]) &&
+        isAdmin();
+      allow delete: if isSignedIn() && isValidId(feeId) && isAdmin();
+    }
+
+    match /siteContent/{docId} {
+      allow get: if isValidId(docId);
+      allow list: if true;
+      allow write: if isValidId(docId);
+    }
+
+    match /inquiries/{inquiryId} {
+      allow get: if isValidId(inquiryId);
+      allow list: if true;
+      allow write: if isValidId(inquiryId);
+    }
+
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId);
+      allow list: if isBootstrappedAdmin();
+      allow create: if isSignedIn() && isValidId(adminId) && isValidAdminProfile(incoming(), adminId) &&
+        isBootstrappedAdmin();
+      allow update: if isSignedIn() && isValidId(adminId) && isValidAdminProfile(incoming(), adminId) &&
+        isBootstrappedAdmin();
+      allow delete: if isSignedIn() && isValidId(adminId) && isBootstrappedAdmin();
+    }
+  }
+}

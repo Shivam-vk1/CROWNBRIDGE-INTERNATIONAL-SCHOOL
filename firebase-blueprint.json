@@ -1,0 +1,581 @@
+{
+  "entities": {
+    "Notice": {
+      "title": "Notice",
+      "description": "Official school notification, circular, or announcement.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Headline of the notice",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the announcement",
+          "enum": ["Admissions", "Academic", "Examinations", "Events", "General"]
+        },
+        "content": {
+          "type": "string",
+          "description": "Full text details of the notice",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "dateLabel": {
+          "type": "string",
+          "description": "Human-readable date string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "isImportant": {
+          "type": "boolean",
+          "description": "Whether the notice is highlighted as urgent/important"
+        },
+        "authorUid": {
+          "type": "string",
+          "description": "UID of the admin who published the notice",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update"
+        }
+      },
+      "required": ["title", "category", "content", "dateLabel", "isImportant", "authorUid", "createdAt", "updatedAt"]
+    },
+    "DownloadItem": {
+      "title": "DownloadItem",
+      "description": "Official downloadable syllabus, registration form, or school PDF document.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Forms", "Syllabus", "Calendar", "Hostel", "General"]
+        },
+        "fileSize": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "fileUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the download is displayed to the public"
+        },
+        "sortOrder": {
+          "type": "number"
+        },
+        "authorUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "title",
+        "category",
+        "fileSize",
+        "fileUrl",
+        "isActive",
+        "sortOrder",
+        "authorUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StudentResult": {
+      "title": "StudentResult",
+      "description": "Published student examination result record.",
+      "type": "object",
+      "properties": {
+        "rollNumber": {
+          "type": "string",
+          "description": "Unique student roll number (e.g. CBIS-2027-101)",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Full name of the student",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "className": {
+          "type": "string",
+          "description": "Class level of the student",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "examTitle": {
+          "type": "string",
+          "description": "Examination or assessment term name",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "session": {
+          "type": "string",
+          "description": "Academic session (e.g. 2027-28)",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "englishMarks": {
+          "type": "number",
+          "description": "Marks scored in English out of 100"
+        },
+        "hindiMarks": {
+          "type": "number",
+          "description": "Marks scored in Hindi out of 100"
+        },
+        "foreignLanguage": {
+          "type": "string",
+          "description": "Selected global language (German, Japanese, or Korean)",
+          "enum": ["German", "Japanese", "Korean"]
+        },
+        "foreignLangMarks": {
+          "type": "number",
+          "description": "Marks scored in foreign language out of 100"
+        },
+        "mathScienceMarks": {
+          "type": "number",
+          "description": "Marks scored in Mathematics & Science out of 100"
+        },
+        "aiCurriculumMarks": {
+          "type": "number",
+          "description": "Marks scored in AI & Innovation Lab out of 100"
+        },
+        "totalMarks": {
+          "type": "number",
+          "description": "Total marks out of 500"
+        },
+        "percentage": {
+          "type": "number",
+          "description": "Overall percentage"
+        },
+        "grade": {
+          "type": "string",
+          "description": "Letter grade awarded",
+          "minLength": 1,
+          "maxLength": 10
+        },
+        "remarks": {
+          "type": "string",
+          "description": "Faculty remarks on student performance",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "authorUid": {
+          "type": "string",
+          "description": "UID of the admin who published the result",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update"
+        }
+      },
+      "required": [
+        "rollNumber",
+        "studentName",
+        "className",
+        "examTitle",
+        "session",
+        "englishMarks",
+        "hindiMarks",
+        "foreignLanguage",
+        "foreignLangMarks",
+        "mathScienceMarks",
+        "aiCurriculumMarks",
+        "totalMarks",
+        "percentage",
+        "grade",
+        "remarks",
+        "authorUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "FeeStructure": {
+      "title": "FeeStructure",
+      "description": "Fee prospectus item for a specific class group.",
+      "type": "object",
+      "properties": {
+        "classGroup": {
+          "type": "string",
+          "description": "Class label (e.g. Class 0 (Pre-Primary))",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "monthlyFee": {
+          "type": "number",
+          "description": "Monthly fee in INR"
+        },
+        "annualFee": {
+          "type": "number",
+          "description": "Annual fee (12 months) in INR"
+        },
+        "registrationFee": {
+          "type": "number",
+          "description": "Registration and Study Kit fee in INR"
+        },
+        "sortOrder": {
+          "type": "number",
+          "description": "Display order in prospectus table"
+        },
+        "session": {
+          "type": "string",
+          "description": "Academic session (e.g. 2027-28)",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "authorUid": {
+          "type": "string",
+          "description": "UID of the admin who updated the fee structure",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update"
+        }
+      },
+      "required": [
+        "classGroup",
+        "monthlyFee",
+        "annualFee",
+        "registrationFee",
+        "sortOrder",
+        "session",
+        "authorUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Global configurable website content and school settings.",
+      "type": "object",
+      "properties": {
+        "schoolName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "tagline": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "heroBadge": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "academicSession": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "admissionsOpenText": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "locationAddress": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 250
+        },
+        "contactPhone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "contactEmail": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "hostelAvailable": {
+          "type": "boolean"
+        },
+        "transportAvailable": {
+          "type": "boolean"
+        },
+        "showResultsPortal": {
+          "type": "boolean"
+        },
+        "resultsPortalUrl": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "customNavButtonName": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "customNavButtonUrl": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "customNavButtonActive": {
+          "type": "boolean"
+        },
+        "customHeroButtonName": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "customHeroButtonUrl": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "customHeroButtonActive": {
+          "type": "boolean"
+        },
+        "publicInfoTitle": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "publicInfoImageUrl": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "publicInfoActive": {
+          "type": "boolean"
+        },
+        "publicInfoDescription": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "noticesInitialized": {
+          "type": "boolean"
+        },
+        "authorUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "schoolName",
+        "tagline",
+        "heroBadge",
+        "academicSession",
+        "admissionsOpenText",
+        "locationAddress",
+        "contactPhone",
+        "contactEmail",
+        "hostelAvailable",
+        "transportAvailable",
+        "showResultsPortal",
+        "resultsPortalUrl",
+        "customNavButtonName",
+        "customNavButtonUrl",
+        "customNavButtonActive",
+        "customHeroButtonName",
+        "customHeroButtonUrl",
+        "customHeroButtonActive",
+        "publicInfoTitle",
+        "publicInfoImageUrl",
+        "publicInfoActive",
+        "publicInfoDescription",
+        "noticesInitialized",
+        "authorUid",
+        "updatedAt"
+      ]
+    },
+    "AdmissionInquiry": {
+      "title": "AdmissionInquiry",
+      "description": "Admission application or inquiry submitted by a parent/guardian.",
+      "type": "object",
+      "properties": {
+        "studentName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "applyingForClass": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "preferredLanguage": {
+          "type": "string",
+          "enum": ["Korean", "Japanese", "German", "English", "Hindi"]
+        },
+        "boardingType": {
+          "type": "string",
+          "enum": ["Day Scholar", "Residential Hostel"]
+        },
+        "parentName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 30
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "status": {
+          "type": "string",
+          "enum": ["new", "contacted", "enrolled", "archived"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "studentName",
+        "applyingForClass",
+        "preferredLanguage",
+        "boardingType",
+        "parentName",
+        "phone",
+        "email",
+        "message",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminProfile": {
+      "title": "AdminProfile",
+      "description": "Administrator registry record.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "enum": ["super_admin", "college_admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "name", "role", "createdAt"]
+    },
+    "LearningResource": {
+      "title": "LearningResource",
+      "description": "CBSE and NCERT textbooks, syllabus, practice worksheets, and digital learning links.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "classLevel": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "category": { "type": "string", "enum": ["NCERT Textbooks", "Worksheets & Practice", "CBSE Syllabus", "Sample Papers", "Digital Interactive", "General"] },
+        "description": { "type": "string", "maxLength": 1000 },
+        "resourceUrl": { "type": "string", "maxLength": 1000 },
+        "officialSource": { "type": "string", "maxLength": 100 },
+        "isActive": { "type": "boolean" },
+        "sortOrder": { "type": "number" },
+        "authorUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "classLevel", "subject", "category", "resourceUrl", "isActive"]
+    }
+  },
+  "firestore": {
+    "/notices/{noticeId}": {
+      "schema": { "$ref": "#/entities/Notice" },
+      "description": "Public school notifications and circulars managed by administrators."
+    },
+    "/downloads/{downloadId}": {
+      "schema": { "$ref": "#/entities/DownloadItem" },
+      "description": "Downloadable syllabus and forms managed by administrators."
+    },
+    "/learning_resources/{resourceId}": {
+      "schema": { "$ref": "#/entities/LearningResource" },
+      "description": "CBSE and NCERT textbooks, syllabus, and study resources managed by administrators."
+    },
+    "/results/{resultId}": {
+      "schema": { "$ref": "#/entities/StudentResult" },
+      "description": "Publicly searchable student examination results managed by administrators."
+    },
+    "/fees/{feeId}": {
+      "schema": { "$ref": "#/entities/FeeStructure" },
+      "description": "Fee prospectus rows by class level for Session 2027-28."
+    },
+    "/siteContent/{docId}": {
+      "schema": { "$ref": "#/entities/SiteSettings" },
+      "description": "Configurable school website texts, banners, and contact settings."
+    },
+    "/inquiries/{inquiryId}": {
+      "schema": { "$ref": "#/entities/AdmissionInquiry" },
+      "description": "Parent admission inquiries (public create, admin-only read/update/delete due to PII)."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminProfile" },
+      "description": "Authorized school administrators."
+    }
+  }
+}

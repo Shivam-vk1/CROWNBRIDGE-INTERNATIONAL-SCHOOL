@@ -1,0 +1,6 @@
+{
+  "name": "Crownbridge International School",
+  "description": "Official website and administration portal for Crownbridge International School, Arunachal Pradesh's first AI-integrated residential & day school offering a 5-language global curriculum.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
