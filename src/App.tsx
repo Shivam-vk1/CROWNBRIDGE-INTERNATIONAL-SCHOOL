@@ -302,6 +302,7 @@ export default function App() {
   const [inqSubmitting, setInqSubmitting] = useState(false);
   const [inqSuccess, setInqSuccess] = useState(false);
   const [inqError, setInqError] = useState<string | null>(null);
+  const [lastInquiryTime, setLastInquiryTime] = useState<number>(0);
 
   // Listen to Auth State
   useEffect(() => {
@@ -541,66 +542,90 @@ export default function App() {
     setLearningResources((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // Submit Admission Enquiry Form
+  // Submit Admission Enquiry Form (Hardened against spam and false-successes)
   const handleEnquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inqStudentName.trim() || !inqParentName.trim() || !inqPhone.trim()) {
+
+    const cleanStudentName = inqStudentName.trim();
+    const cleanParentName = inqParentName.trim();
+    const cleanPhone = inqPhone.trim();
+    const cleanEmail = inqEmail.trim();
+    const cleanMessage = inqMessage.trim();
+
+    // 1. Validation
+    if (!cleanStudentName || !cleanParentName || !cleanPhone) {
       setInqError('Please fill in Student Name, Parent Name, and Contact Phone.');
       return;
     }
+
+    if (cleanStudentName.length < 2 || cleanStudentName.length > 100) {
+      setInqError('Student name must be between 2 and 100 characters.');
+      return;
+    }
+
+    if (cleanParentName.length < 2 || cleanParentName.length > 100) {
+      setInqError('Parent/Guardian name must be between 2 and 100 characters.');
+      return;
+    }
+
+    const digitsOnly = cleanPhone.replace(/[^0-9]/g, '');
+    if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+      setInqError('Please enter a valid 10-digit mobile or contact phone number.');
+      return;
+    }
+
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setInqError('Please provide a valid email address.');
+      return;
+    }
+
+    if (cleanMessage.length > 1000) {
+      setInqError('Enquiry message cannot exceed 1000 characters.');
+      return;
+    }
+
+    // 2. Client-side Rate Limiting (Prevent spam submissions)
+    const now = Date.now();
+    if (lastInquiryTime && now - lastInquiryTime < 25000) {
+      setInqError('Please wait a few seconds before submitting another enquiry.');
+      return;
+    }
+
     setInqSubmitting(true);
     setInqError(null);
     const inquiryId = `inq-${Date.now()}`;
-    const localRecord = {
-      id: inquiryId,
-      studentName: inqStudentName.trim(),
-      applyingForClass: inqClass,
-      preferredLanguage: inqLanguage,
-      boardingType: inqBoarding,
-      parentName: inqParentName.trim(),
-      phone: inqPhone.trim(),
-      email: inqEmail.trim() || 'not-provided@crownbridge.edu.in',
-      message: inqMessage.trim() || 'General admission enquiry submitted via website.',
-      status: 'new',
-      timestamp: new Date().toISOString(),
-    };
 
     try {
-      const offlineInquiries = JSON.parse(localStorage.getItem('cbis_offline_inquiries') || '[]');
-      offlineInquiries.unshift(localRecord);
-      localStorage.setItem('cbis_offline_inquiries', JSON.stringify(offlineInquiries));
-    } catch {
-      // ignore local storage errors
-    }
-
-    try {
+      // Direct server-side persistence to Firestore without exposing personal PII in public localStorage
       await setDoc(doc(db, 'inquiries', inquiryId), {
-        studentName: localRecord.studentName,
-        applyingForClass: localRecord.applyingForClass,
-        preferredLanguage: localRecord.preferredLanguage,
-        boardingType: localRecord.boardingType,
-        parentName: localRecord.parentName,
-        phone: localRecord.phone,
-        email: localRecord.email,
-        message: localRecord.message,
+        studentName: cleanStudentName.slice(0, 100),
+        applyingForClass: inqClass,
+        preferredLanguage: inqLanguage,
+        boardingType: inqBoarding,
+        parentName: cleanParentName.slice(0, 100),
+        phone: cleanPhone.slice(0, 30),
+        email: cleanEmail ? cleanEmail.slice(0, 100) : 'not-provided@crownbridge.edu.in',
+        message: cleanMessage ? cleanMessage.slice(0, 1000) : 'General admission enquiry submitted via website.',
         status: 'new',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+
+      // ONLY set success state if the database write successfully resolved
       setInqSuccess(true);
+      setLastInquiryTime(now);
       setInqStudentName('');
       setInqParentName('');
       setInqPhone('');
       setInqEmail('');
       setInqMessage('');
     } catch (err: unknown) {
-      console.error(err);
-      setInqSuccess(true);
-      setInqStudentName('');
-      setInqParentName('');
-      setInqPhone('');
-      setInqEmail('');
-      setInqMessage('');
+      console.error('Admission enquiry error:', err);
+      // Never report false success when Firestore rejected or failed the submission
+      setInqSuccess(false);
+      setInqError(
+        'Unable to send enquiry due to a network connection issue. Please check your connection or call the Admissions Office directly at +91 94360 27109.'
+      );
     } finally {
       setInqSubmitting(false);
     }

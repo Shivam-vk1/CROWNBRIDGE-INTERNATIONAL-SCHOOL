@@ -207,32 +207,28 @@ service cloud.firestore {
 
     // 4. Collection Rules
     match /notices/{noticeId} {
-      allow get: if isValidId(noticeId);
-      allow list: if true;
-      allow write: if isValidId(noticeId);
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn() && isValidId(noticeId) && isAdmin();
     }
 
     match /downloads/{downloadId} {
-      allow get: if isValidId(downloadId);
-      allow list: if true;
-      allow write: if isValidId(downloadId);
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn() && isValidId(downloadId) && isAdmin();
     }
 
     match /gallery/{galleryId} {
-      allow get: if isValidId(galleryId);
-      allow list: if true;
-      allow write: if isValidId(galleryId);
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn() && isValidId(galleryId) && isAdmin();
     }
 
     match /learning_resources/{resourceId} {
-      allow get: if isValidId(resourceId);
-      allow list: if true;
-      allow write: if isValidId(resourceId);
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn() && isValidId(resourceId) && isAdmin();
     }
 
     match /results/{resultId} {
       allow get: if isValidId(resultId);
-      allow list: if resource.data.rollNumber is string;
+      allow list: if isSignedIn() && isAdmin();
       allow create: if isSignedIn() && isValidId(resultId) && isValidResult(incoming()) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time &&
@@ -251,8 +247,7 @@ service cloud.firestore {
     }
 
     match /fees/{feeId} {
-      allow get: if isValidId(feeId);
-      allow list: if resource.data.classGroup is string;
+      allow get, list: if true;
       allow create: if isSignedIn() && isValidId(feeId) && isValidFee(incoming()) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time &&
@@ -269,19 +264,19 @@ service cloud.firestore {
     }
 
     match /siteContent/{docId} {
-      allow get: if isValidId(docId);
-      allow list: if true;
-      allow write: if isValidId(docId);
+      allow get, list: if true;
+      allow write: if isSignedIn() && isValidId(docId) && isAdmin();
     }
 
     match /inquiries/{inquiryId} {
-      allow get: if isValidId(inquiryId);
-      allow list: if true;
-      allow write: if isValidId(inquiryId);
+      // Public parents can only submit their inquiry with valid schema
+      allow create: if isValidId(inquiryId) && isValidInquiry(incoming());
+      // Only authenticated school administrators can list, view, update, or delete private inquiries
+      allow get, list, update, delete: if isSignedIn() && isAdmin();
     }
 
     match /admins/{adminId} {
-      allow get: if isValidId(adminId);
+      allow get: if isSignedIn() && (request.auth.uid == adminId || isBootstrappedAdmin());
       allow list: if isBootstrappedAdmin();
       allow create: if isSignedIn() && isValidId(adminId) && isValidAdminProfile(incoming(), adminId) &&
         isBootstrappedAdmin();

@@ -383,27 +383,12 @@ export default function AdminDashboard({
       return;
     }
 
-    const getLocalInquiries = (): AdmissionInquiryItem[] => {
-      try {
-        const raw = JSON.parse(localStorage.getItem('cbis_offline_inquiries') || '[]');
-        if (!Array.isArray(raw)) return [];
-        return raw.map((item: any, idx: number) => ({
-          id: item.id || `local-inq-${idx}`,
-          studentName: item.studentName || 'Student',
-          applyingForClass: item.applyingForClass || 'Class 1 – 3',
-          preferredLanguage: item.preferredLanguage || 'English',
-          boardingType: item.boardingType || 'Day Scholar',
-          parentName: item.parentName || 'Parent',
-          phone: item.phone || '',
-          email: item.email || '',
-          message: item.message || '',
-          status: item.status || 'new',
-          createdAt: item.createdAt || item.timestamp || new Date().toISOString(),
-        }));
-      } catch {
-        return [];
-      }
-    };
+    // Clean up any legacy offline inquiry PII from localStorage to protect parent privacy
+    try {
+      localStorage.removeItem('cbis_offline_inquiries');
+    } catch {
+      // ignore
+    }
 
     setInquiriesLoading(true);
     const q = query(collection(db, 'inquiries'), orderBy('createdAt', 'desc'));
@@ -414,23 +399,12 @@ export default function AdminDashboard({
           id: d.id,
           ...(d.data() as Omit<AdmissionInquiryItem, 'id'>),
         }));
-        const localRows = getLocalInquiries();
-        const combinedMap = new Map<string, AdmissionInquiryItem>();
-        for (const r of firestoreRows) {
-          combinedMap.set(r.id, r);
-        }
-        for (const l of localRows) {
-          if (!combinedMap.has(l.id)) {
-            combinedMap.set(l.id, l);
-          }
-        }
-        setInquiries(Array.from(combinedMap.values()));
+        setInquiries(firestoreRows);
         setInquiriesLoading(false);
       },
       (error) => {
-        setInquiries(getLocalInquiries());
         setInquiriesLoading(false);
-        console.warn('Inquiries listener error (showing cached inquiries):', error);
+        console.warn('Inquiries listener error:', error);
       }
     );
     return () => unsub();
@@ -1499,24 +1473,14 @@ export default function AdminDashboard({
       prev.map((item) => (item.id === inquiryId ? { ...item, status: newStatus } : item))
     );
     try {
-      const localRaw = JSON.parse(localStorage.getItem('cbis_offline_inquiries') || '[]');
-      if (Array.isArray(localRaw)) {
-        const updatedLocal = localRaw.map((item: any) =>
-          item.id === inquiryId ? { ...item, status: newStatus } : item
-        );
-        localStorage.setItem('cbis_offline_inquiries', JSON.stringify(updatedLocal));
-      }
-    } catch {
-      // ignore
-    }
-    try {
       await updateDoc(doc(db, 'inquiries', inquiryId), {
         status: newStatus,
         updatedAt: serverTimestamp(),
       });
       showMessage('success', `Inquiry status changed to ${newStatus.toUpperCase()}`);
-    } catch {
-      showMessage('success', `Inquiry status changed to ${newStatus.toUpperCase()}`);
+    } catch (err: unknown) {
+      console.error('Update inquiry status error:', err);
+      showMessage('error', 'Could not update inquiry status in cloud.');
     }
   };
 
@@ -1535,19 +1499,11 @@ export default function AdminDashboard({
     });
     setInquiries((prev) => prev.filter((item) => item.id !== inquiryId));
     try {
-      const localRaw = JSON.parse(localStorage.getItem('cbis_offline_inquiries') || '[]');
-      if (Array.isArray(localRaw)) {
-        const filteredLocal = localRaw.filter((item: any) => item.id !== inquiryId);
-        localStorage.setItem('cbis_offline_inquiries', JSON.stringify(filteredLocal));
-      }
-    } catch {
-      // ignore
-    }
-    try {
       await deleteDoc(doc(db, 'inquiries', inquiryId));
       showMessage('success', 'Admission inquiry deleted permanently.');
-    } catch {
-      showMessage('success', 'Admission inquiry deleted.');
+    } catch (err: unknown) {
+      console.error('Delete inquiry error:', err);
+      showMessage('error', 'Could not delete inquiry from database.');
     }
   };
 

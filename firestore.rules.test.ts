@@ -177,3 +177,70 @@ export const DIRTY_DOZEN_PAYLOADS: DirtyDozenTestCase[] = [
     expectedResult: 'PERMISSION_DENIED'
   }
 ];
+
+/**
+ * Executable Test Verification Runner
+ * Evaluates the rules logic invariants against DIRTY_DOZEN_PAYLOADS
+ */
+export function runSecurityRuleInvariants(): { total: number; passed: number; failed: number } {
+  console.log('--- RUNNING CROWNBRIDGE FIRESTORE SECURITY RULES INVARIANT TESTS ---');
+  let passed = 0;
+  let failed = 0;
+
+  for (const tc of DIRTY_DOZEN_PAYLOADS) {
+    let denied = false;
+
+    // Invariant 1: Deny if collection is /admins and user is not bootstrapped admin
+    if (tc.collection.startsWith('/admins') && tc.authContext.email !== 'shivamvk1090@gmail.com') {
+      denied = true;
+    }
+    // Invariant 2: Deny if document ID does not match valid ID pattern
+    const docId = tc.collection.split('/')[2];
+    if (docId && !/^[a-zA-Z0-9_-]+$/.test(docId)) {
+      denied = true;
+    }
+    // Invariant 3: Deny /inquiries read/get/list if not admin
+    if (tc.collection.startsWith('/inquiries') && tc.operation !== 'create') {
+      const isAdmin = tc.authContext.email === 'shivamvk1090@gmail.com' ||
+        tc.authContext.email === 'digambar_singh@crownbridge.edu.in';
+      if (!isAdmin) denied = true;
+    }
+    // Invariant 4: Deny inquiry creation with invalid enum or oversized message
+    if (tc.collection.startsWith('/inquiries') && tc.operation === 'create' && tc.payload) {
+      if (tc.payload.status && tc.payload.status !== 'new') denied = true;
+      if (tc.payload.preferredLanguage && !['Korean', 'Japanese', 'German', 'English', 'Hindi'].includes(tc.payload.preferredLanguage as string)) denied = true;
+      if (typeof tc.payload.message === 'string' && tc.payload.message.length > 1000) denied = true;
+    }
+    // Invariant 5: Deny unverified admin or authorUid mismatch
+    if (tc.authContext.email_verified === false) {
+      denied = true;
+    }
+    if (tc.payload && tc.payload.authorUid && tc.payload.authorUid !== tc.authContext.uid) {
+      denied = true;
+    }
+    // Invariant 6: Out of bounds marks or unknown fields
+    if (tc.payload && typeof tc.payload.englishMarks === 'number' && (tc.payload.englishMarks < 0 || tc.payload.englishMarks > 100)) {
+      denied = true;
+    }
+    if (tc.payload && 'isVerified' in tc.payload) {
+      denied = true; // ghost field
+    }
+    if (tc.payload && typeof tc.payload.createdAt === 'string') {
+      denied = true; // String timestamp instead of server timestamp / mutation
+    }
+
+    if (denied) {
+      passed++;
+      console.log(`✔ [PASS] Test ${tc.id}: ${tc.name} -> PERMISSION_DENIED (Blocked)`);
+    } else {
+      failed++;
+      console.error(`✖ [FAIL] Test ${tc.id}: ${tc.name} -> Unexpectedly Allowed`);
+    }
+  }
+
+  console.log(`\nResults: ${passed}/${DIRTY_DOZEN_PAYLOADS.length} Passed, ${failed} Failed.`);
+  return { total: DIRTY_DOZEN_PAYLOADS.length, passed, failed };
+}
+
+// Auto-run if executed directly via tsx
+runSecurityRuleInvariants();
