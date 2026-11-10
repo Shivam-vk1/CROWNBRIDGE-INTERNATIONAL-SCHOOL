@@ -123,10 +123,17 @@ export const DEFAULT_STAFF_ACCOUNTS: AdminProfileItem[] = [
   },
 ];
 
+export const getAssetUrl = (relativePath: string) => {
+  const base = import.meta.env.BASE_URL || './';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  const cleanPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+  return `${cleanBase}${cleanPath}`;
+};
+
 export const SCHOOL_ASSETS = {
-  logo: '/assets/crownbridge-logo.jpeg',
-  feesPamphlet: '/assets/crownbridge-prospectus.jpeg',
-  languagePamphlet: '/assets/crownbridge-languages.jpeg',
+  logo: getAssetUrl('assets/crownbridge-logo.jpeg'),
+  feesPamphlet: getAssetUrl('assets/crownbridge-prospectus.jpeg'),
+  languagePamphlet: getAssetUrl('assets/crownbridge-languages.jpeg'),
 };
 
 export const DEFAULT_SITE_SETTINGS: SiteSettingsData = {
@@ -150,7 +157,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettingsData = {
   customHeroButtonUrl: '#downloads',
   customHeroButtonActive: false,
   publicInfoTitle: 'Public Information & Official School Prospectus',
-  publicInfoImageUrl: '/assets/crownbridge-prospectus.jpeg',
+  publicInfoImageUrl: getAssetUrl('assets/crownbridge-prospectus.jpeg'),
   publicInfoActive: true,
   publicInfoDescription: 'Official public announcement bulletin and school overview prospectus for parents and guardians.',
   noticesInitialized: false,
@@ -671,7 +678,7 @@ export const DEFAULT_DOWNLOADS: DownloadDocItem[] = [
     fileSize: 'PDF · 420 KB',
     category: 'Forms',
     filename: 'Crownbridge_Admission_Form_2027-28.pdf',
-    fileUrl: '/assets/crownbridge-prospectus.jpeg',
+    fileUrl: getAssetUrl('assets/crownbridge-prospectus.jpeg'),
     isActive: true,
     order: 1,
   },
@@ -681,7 +688,7 @@ export const DEFAULT_DOWNLOADS: DownloadDocItem[] = [
     fileSize: 'PDF · 850 KB',
     category: 'Syllabus',
     filename: 'Crownbridge_5_Language_Program_Guide.pdf',
-    fileUrl: '/assets/crownbridge-languages.jpeg',
+    fileUrl: getAssetUrl('assets/crownbridge-languages.jpeg'),
     isActive: true,
     order: 2,
   },
@@ -691,7 +698,7 @@ export const DEFAULT_DOWNLOADS: DownloadDocItem[] = [
     fileSize: 'PDF · 310 KB',
     category: 'Calendar',
     filename: 'Crownbridge_Academic_Calendar_2027-28.pdf',
-    fileUrl: '/assets/crownbridge-logo.jpeg',
+    fileUrl: getAssetUrl('assets/crownbridge-logo.jpeg'),
     isActive: true,
     order: 3,
   },
@@ -701,7 +708,7 @@ export const DEFAULT_DOWNLOADS: DownloadDocItem[] = [
     fileSize: 'PDF · 280 KB',
     category: 'Hostel',
     filename: 'Crownbridge_Hostel_Rules_and_Kit.pdf',
-    fileUrl: '/assets/crownbridge-prospectus.jpeg',
+    fileUrl: getAssetUrl('assets/crownbridge-prospectus.jpeg'),
     isActive: true,
     order: 4,
   },
@@ -992,7 +999,7 @@ export const DEFAULT_LEARNING_RESOURCES: LearningResourceItem[] = [
     subject: 'General',
     category: 'Worksheets & Practice',
     description: 'Hiragana/Katakana charts, Korean Hangul alphabet sound tables, and German A1 foundational vocabulary guide.',
-    resourceUrl: '/assets/crownbridge-languages.jpeg',
+    resourceUrl: getAssetUrl('assets/crownbridge-languages.jpeg'),
     officialSource: 'Crownbridge Academic Wing',
     isActive: true,
     sortOrder: 22,
