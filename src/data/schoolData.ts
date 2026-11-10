@@ -117,7 +117,6 @@ export const DEFAULT_STAFF_ACCOUNTS: AdminProfileItem[] = [
     userId: 'digambar_singh',
     email: 'digambar_singh@crownbridge.edu.in',
     name: 'Digambar Singh (School Administration)',
-    password: 'School@8795071795',
     isActive: true,
     role: 'college_admin',
   },

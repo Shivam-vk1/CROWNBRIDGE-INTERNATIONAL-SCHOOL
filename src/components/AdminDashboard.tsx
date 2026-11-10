@@ -467,7 +467,7 @@ export default function AdminDashboard({
             ...existing,
             ...fsDoc,
             userId: fsDoc.userId || existing?.userId || fsDoc.email.split('@')[0],
-            password: fsDoc.password || existing?.password || 'School@8795071795',
+            password: fsDoc.password || existing?.password,
             isActive: fsDoc.isActive !== undefined ? fsDoc.isActive : (existing?.isActive ?? true),
           });
         }
@@ -564,10 +564,21 @@ export default function AdminDashboard({
         return;
       }
 
-      const expectedPwd = matchedStaff.password || 'School@8795071795';
-      const pwdValid =
-        pwdInput === expectedPwd ||
-        (expectedPwd === 'School@8795071795' && pwdInput.toLowerCase() === 'school@8795071795');
+      const expectedPwd = matchedStaff.password;
+      let pwdValid = false;
+
+      // 1. Direct password match if set by Super Admin in Firestore
+      if (expectedPwd && pwdInput === expectedPwd) {
+        pwdValid = true;
+      } else {
+        // 2. Validate against Firebase Auth directly
+        try {
+          await signInWithEmailAndPassword(auth, matchedStaff.email, pwdInput);
+          pwdValid = true;
+        } catch {
+          pwdValid = false;
+        }
+      }
 
       if (pwdValid) {
         const now = Date.now();
@@ -586,56 +597,21 @@ export default function AdminDashboard({
         } catch {
           // ignore
         }
-        try {
-          await signInWithEmailAndPassword(auth, matchedStaff.email, pwdInput);
-        } catch (authErr: unknown) {
-          const errCode = (authErr as { code?: string })?.code;
-          if (errCode === 'auth/user-not-found' || errCode === 'auth/invalid-credential') {
-            try {
-              await createUserWithEmailAndPassword(auth, matchedStaff.email, pwdInput);
-            } catch {
-              // Session active via localStaffUser
-            }
-          }
-        }
         showMessage('success', `Welcome, ${matchedStaff.name}! Signed in (Session secured with 20m inactivity auto-lock).`);
         setAuthLoading(false);
         return;
       } else {
-        showMessage('error', 'Incorrect password for this Staff User ID. Please try again.');
+        if (!expectedPwd) {
+          showMessage(
+            'error',
+            'Password has not been set for this staff account yet. The School Administrator must set your password in the Staff & Roles panel.'
+          );
+        } else {
+          showMessage('error', 'Incorrect password for this Staff User ID. Please try again.');
+        }
         setAuthLoading(false);
         return;
       }
-    }
-
-    // Legacy fallback check
-    const isLegacyStaff =
-      (inputLower === 'staff' ||
-        inputLower === 'admin' ||
-        inputLower === 'staff@crownbridge.edu.in' ||
-        inputLower === 'admin@crownbridge.edu.in') &&
-      (pwdInput === 'Crownbridge@2027' || pwdInput === 'Admin@2027');
-
-    if (isLegacyStaff) {
-      const now = Date.now();
-      const staffSession: StaffSessionData = {
-        uid: 'staff-admin-session',
-        email: 'staff@crownbridge.edu.in',
-        displayName: 'College Administration Staff',
-        role: 'college_admin',
-        loginTime: now,
-        lastActivity: now,
-      };
-      setLocalStaffUser(staffSession);
-      try {
-        sessionStorage.setItem('cbis_staff_session', JSON.stringify(staffSession));
-        localStorage.removeItem('cbis_staff_session');
-      } catch {
-        // ignore
-      }
-      showMessage('success', 'Welcome! Signed in as College Administration (Session secured with 20m auto-lock).');
-      setAuthLoading(false);
-      return;
     }
 
     // Standard Firebase Auth fallback for any external accounts
@@ -682,7 +658,7 @@ export default function AdminDashboard({
     setEditingStaffUid(staff.uid);
     setNewUserName(staff.name);
     setNewUserEmail(staff.userId || staff.email);
-    setNewUserPassword(staff.password || 'School@8795071795');
+    setNewUserPassword(staff.password || '');
     setNewUserActive(staff.isActive !== false);
     setShowFormPassword(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -805,7 +781,7 @@ export default function AdminDashboard({
           userId: (staff.userId || staff.email.split('@')[0]).slice(0, 80),
           email: staff.email.slice(0, 120),
           name: staff.name.slice(0, 100),
-          password: (staff.password || 'School@8795071795').slice(0, 120),
+          ...(staff.password ? { password: staff.password.slice(0, 120) } : {}),
           isActive: nextActive,
           role: 'college_admin',
           createdAt: serverTimestamp(),
@@ -4209,8 +4185,7 @@ export default function AdminDashboard({
                     ) : (
                       managedStaffList.map((adm) => {
                         const displayUserId = adm.userId || adm.email.split('@')[0];
-                        const displayPassword = adm.password || 'School@8795071795';
-                        const isPwdShown = Boolean(visiblePasswords[adm.uid]);
+                        const hasPassword = Boolean(adm.password);
                         const isEnabled = adm.isActive !== false;
 
                         return (
@@ -4237,37 +4212,28 @@ export default function AdminDashboard({
                                 </span>
                               </div>
 
-                              {/* Staff Login Credentials Box (Visible only to Super Admin) */}
+                              {/* Staff Login Credentials Box (Protected) */}
                               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500">User ID:</span>
+                                  <span className="text-slate-500">Staff User ID:</span>
                                   <code className="font-mono font-bold text-slate-900 bg-white px-1.5 py-0.5 rounded border border-slate-200 select-all">
                                     {displayUserId}
                                   </code>
                                 </div>
 
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-slate-500">Password:</span>
-                                  <code className="font-mono font-bold text-slate-900 bg-white px-1.5 py-0.5 rounded border border-slate-200 select-all">
-                                    {isPwdShown ? displayPassword : '••••••••••••'}
-                                  </code>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setVisiblePasswords((prev) => ({
-                                        ...prev,
-                                        [adm.uid]: !prev[adm.uid],
-                                      }))
-                                    }
-                                    className="text-slate-500 hover:text-slate-900 p-1 rounded hover:bg-slate-200/60 transition-colors cursor-pointer"
-                                    title={isPwdShown ? 'Hide Password' : 'Show Password'}
-                                  >
-                                    {isPwdShown ? (
-                                      <EyeOff className="w-3.5 h-3.5" />
-                                    ) : (
-                                      <Eye className="w-3.5 h-3.5" />
-                                    )}
-                                  </button>
+                                  <span className="text-slate-500">Password Status:</span>
+                                  {hasPassword ? (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
+                                      <Key className="w-3 h-3 text-emerald-600" />
+                                      <span>Protected & Set in Cloud</span>
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg">
+                                      <Lock className="w-3 h-3 text-amber-600" />
+                                      <span>Not Set (Click Edit / Reset)</span>
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -4281,7 +4247,7 @@ export default function AdminDashboard({
                                 title="Edit User ID or Reset Password"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
-                                <span>Edit / Reset</span>
+                                <span>Edit / Set Password</span>
                               </button>
 
                               <button
